@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎯 Caminito</title>
+  <style>
+    :root {
+      --bg: #070b14;
+      --panel: #161d33;
+      --panel-2: #1f2740;
+      --text: #eaf0ff;
+      --muted: #b8c3ea;
+      --accent: #6fd7a8;
+      --warn: #ff8585;
+      --btn: #263252;
+      --btn-border: #4f5e89;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at 10% 10%, #121a2f 0%, var(--bg) 45%, #050810 100%);
+      padding: 14px;
+    }
+
+    .app {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      gap: 12px;
+    }
+
+    .card {
+      background: linear-gradient(120deg, rgba(30, 40, 65, 0.95), rgba(21, 28, 47, 0.95));
+      border: 1px solid #2f3c61;
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 0 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .top h1 {
+      font-size: clamp(28px, 2.4vw, 38px);
+      margin: 0;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      color: #c8d4fa;
+      font-size: clamp(16px, 1.4vw, 22px);
+    }
+
+    .controls {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    label { font-size: 28px; }
+
+    select, button {
+      font-size: clamp(24px, 2vw, 30px);
+      border-radius: 14px;
+      border: 2px solid var(--btn-border);
+      padding: 10px 16px;
+      min-height: 60px;
+      color: #ffffff;
+      background: #243252;
+    }
+
+    select {
+      min-width: 300px;
+      appearance: none;
+      background-image: linear-gradient(45deg, transparent 50%, #dce4ff 50%), linear-gradient(135deg, #dce4ff 50%, transparent 50%);
+      background-position: calc(100% - 22px) calc(50% - 4px), calc(100% - 13px) calc(50% - 4px);
+      background-size: 9px 9px, 9px 9px;
+      background-repeat: no-repeat;
+      padding-right: 46px;
+    }
+
+    select option {
+      color: #fff;
+      background: #1b2948;
+      font-size: 24px;
+    }
+
+    button {
+      cursor: pointer;
+      background: var(--btn);
+      transition: transform 0.08s ease, background-color 0.2s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    button.primary { border-color: #4aa07e; background: #245640; }
+    button.stop { border-color: #7f5a66; background: #3d2730; }
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .middle {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 10px;
+    }
+
+    .hud-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(140px, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .metric {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid #39476c;
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .metric .k {
+      font-size: 16px;
+      color: #c2d1ff;
+    }
+
+    .metric .v {
+      font-size: 32px;
+      line-height: 1.0;
+      font-weight: 700;
+    }
+
+    .tips h3 { margin: 0 0 8px; font-size: 28px; }
+    .tips ul {
+      margin: 0;
+      padding-left: 22px;
+      display: grid;
+      gap: 7px;
+      font-size: 22px;
+      line-height: 1.1;
+      color: #dbe5ff;
+    }
+
+    .play-wrap {
+      background: linear-gradient(180deg, #070d1c, #040811);
+      border: 1px solid #27324f;
+      border-radius: 18px;
+      padding: 8px;
+      min-height: min(66vh, 640px);
+    }
+
+    canvas {
+      width: 100%;
+      height: min(64vh, 620px);
+      min-height: 360px;
+      display: block;
+      border-radius: 14px;
+      touch-action: none;
+    }
+
+    footer {
+      text-align: center;
+      color: #b9c7ef;
+      font-size: 18px;
+      padding: 4px 8px 10px;
+    }
+
+    @media (max-width: 900px) {
+      .middle { grid-template-columns: 1fr; }
+      label { font-size: 22px; }
+      .tips ul { font-size: 23px; }
+      .metric .v { font-size: 36px; }
+      select, button { min-height: 54px; font-size: 22px; }
+      select { min-width: 250px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="card top">
+      <h1>🎯 Caminito</h1>
+      <div class="subtitle">Arrastrá la ficha hasta el destino, siguiendo el camino (sin perder).</div>
+      <div class="controls">
+        <label for="level">Nivel:</label>
+        <select id="level">
+          <option value="1">Nivel 1 (recto ancho)</option>
+          <option value="2">Nivel 2 (curva suave)</option>
+          <option value="3">Nivel 3 (S suave)</option>
+          <option value="4">Nivel 4 (S pronunciado)</option>
+        </select>
+        <button class="primary" id="startBtn">Empezar</button>
+        <button id="resetBtn">Reiniciar</button>
+        <button class="stop" id="endBtn">Terminar</button>
+      </div>
+    </section>
+
+    <section class="middle">
+      <article class="card">
+        <h2 id="statusMsg" style="margin:0; font-size:34px;">Listo. Elegí un nivel y tocá <strong>Empezar</strong>.</h2>
+        <div class="hud-grid">
+          <div class="metric"><div class="k">Entregas</div><div id="entregas" class="v">0</div></div>
+          <div class="metric"><div class="k">Promedio (s)</div><div id="promedio" class="v">0.0</div></div>
+          <div class="metric"><div class="k">Salidas</div><div id="salidas" class="v">0</div></div>
+          <div class="metric"><div class="k">% en camino</div><div id="pctCamino" class="v">0%</div></div>
+        </div>
+      </article>
+
+      <article class="card tips">
+        <h3>Tips (anti-frustración):</h3>
+        <ul>
+          <li>Si te salís, no pasa nada: solo te avisa “Volvé al camino”.</li>
+          <li>Cerca del destino hay “imán” para facilitar el cierre.</li>
+          <li>Podés jugar sin tiempo: tocá <strong>Terminar</strong> cuando quieras.</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="play-wrap">
+      <canvas id="game"></canvas>
+    </section>
+
+    <footer>Hecho para entrenar control fino del mouse / dedo. Tamaños grandes, feedback suave y sin “game over”.</footer>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    const statusMsg = document.getElementById('statusMsg');
+    const levelSelect = document.getElementById('level');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const endBtn = document.getElementById('endBtn');
+
+    const hud = {
+      entregas: document.getElementById('entregas'),
+      promedio: document.getElementById('promedio'),
+      salidas: document.getElementById('salidas'),
+      pctCamino: document.getElementById('pctCamino')
+    };
+
+    const state = {
+      mode: 'idle', // idle / playing / ended
+      level: 1,
+      path: [],
+      corridorWidth: 120,
+      start: { x: 0, y: 0 },
+      end: { x: 0, y: 0 },
+      token: { x: 0, y: 0, r: 22 },
+      dragging: false,
+      pointerId: null,
+      dragOffset: { x: 0, y: 0 },
+      feedbackOut: false,
+      wasOutside: false,
+      snapRadius: 55,
+      resetTimer: null,
+      startTs: 0,
+      lastFrameTs: 0,
+      msInside: 0,
+      msTotal: 0,
+      entregas: 0,
+      salidas: 0,
+      tiempos: []
+    };
+
+    function resizeCanvas() {
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      buildLevelPath();
+      if (!state.dragging) resetTokenToStart();
+      draw();
+    }
+
+    function lerp(a, b, t) {
+      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+    }
+
+    function sampleQuadratic(p0, p1, p2, n) {
+      const pts = [];
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        const a = lerp(p0, p1, t);
+        const b = lerp(p1, p2, t);
+        pts.push(lerp(a, b, t));
+      }
+      return pts;
+    }
+
+    function buildLevelPath() {
+      // Se genera el camino como polilínea para medir distancia del centro de la ficha a segmentos.
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      const mx = Math.max(50, w * 0.05);
+      const yMid = h * 0.54;
+      const x0 = mx;
+      const x1 = w - mx;
+
+      let points = [];
+      let corridor = 120;
+      if (state.level === 1) {
+        corridor = 120;
+        points = [{ x: x0, y: yMid }, { x: x1, y: yMid }];
+      } else if (state.level === 2) {
+        corridor = 90;
+        points = sampleQuadratic(
+          { x: x0, y: yMid + 30 },
+          { x: (x0 + x1) / 2, y: yMid - h * 0.26 },
+          { x: x1, y: yMid + 30 },
+          90
+        );
+      } else if (state.level === 3) {
+        corridor = 70;
+        const pA = sampleQuadratic(
+          { x: x0, y: yMid + 18 },
+          { x: w * 0.32, y: yMid - h * 0.28 },
+          { x: w * 0.56, y: yMid + 10 },
+          70
+        );
+        const pB = sampleQuadratic(
+          { x: w * 0.56, y: yMid + 10 },
+          { x: w * 0.76, y: yMid + h * 0.26 },
+          { x: x1, y: yMid - 12 },
+          70
+        );
+        points = pA.concat(pB.slice(1));
+      } else {
+        corridor = 60;
+        const seg1 = sampleQuadratic({ x: x0, y: yMid + 18 }, { x: w * 0.20, y: yMid - h * 0.24 }, { x: w * 0.38, y: yMid + 6 }, 45);
+        const seg2 = sampleQuadratic({ x: w * 0.38, y: yMid + 6 }, { x: w * 0.52, y: yMid + h * 0.28 }, { x: w * 0.62, y: yMid - 8 }, 45);
+        const seg3 = sampleQuadratic({ x: w * 0.62, y: yMid - 8 }, { x: w * 0.74, y: yMid - h * 0.24 }, { x: w * 0.84, y: yMid + 6 }, 45);
+        const seg4 = sampleQuadratic({ x: w * 0.84, y: yMid + 6 }, { x: w * 0.92, y: yMid + h * 0.20 }, { x: x1, y: yMid - 10 }, 45);
+        points = seg1.concat(seg2.slice(1), seg3.slice(1), seg4.slice(1));
+      }
+      state.path = points;
+      state.corridorWidth = corridor;
+      state.start = { ...points[0] };
+      state.end = { ...points[points.length - 1] };
+      state.snapRadius = Math.max(52, corridor * 0.9);
+    }
+
+    function distPointToSegment(px, py, ax, ay, bx, by) {
+      const abx = bx - ax;
+      const aby = by - ay;
+      const apx = px - ax;
+      const apy = py - ay;
+      const ab2 = abx * abx + aby * aby || 1;
+      const t = Math.max(0, Math.min(1, (apx * abx + apy * aby) / ab2));
+      const cx = ax + abx * t;
+      const cy = ay + aby * t;
+      return Math.hypot(px - cx, py - cy);
+    }
+
+    function distToPath(p) {
+      // Distancia mínima a la polilínea: min distancia a cada segmento consecutivo.
+      let minD = Infinity;
+      const pts = state.path;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const d = distPointToSegment(p.x, p.y, pts[i].x, pts[i].y, pts[i + 1].x, pts[i + 1].y);
+        if (d < minD) minD = d;
+      }
+      return minD;
+    }
+
+    function updateHud() {
+      hud.entregas.textContent = String(state.entregas);
+      const avg = state.tiempos.length ? state.tiempos.reduce((a, b) => a + b, 0) / state.tiempos.length : 0;
+      hud.promedio.textContent = avg.toFixed(1);
+      hud.salidas.textContent = String(state.salidas);
+      const pct = state.msTotal > 0 ? Math.round((state.msInside / state.msTotal) * 100) : 0;
+      hud.pctCamino.textContent = `${pct}%`;
+    }
+
+    function resetTokenToStart() {
+      state.token.x = state.start.x;
+      state.token.y = state.start.y;
+      state.wasOutside = false;
+      state.feedbackOut = false;
+    }
+
+    function pointFromEvent(e) {
+      const rect = canvas.getBoundingClientRect();
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+
+    function canInteract() {
+      return state.mode === 'playing' && !state.resetTimer;
+    }
+
+    function pointerDown(e) {
+      if (!canInteract()) return;
+      const p = pointFromEvent(e);
+      if (Math.hypot(p.x - state.token.x, p.y - state.token.y) <= state.token.r + 18) {
+        state.dragging = true;
+        state.pointerId = e.pointerId;
+        state.dragOffset.x = state.token.x - p.x;
+        state.dragOffset.y = state.token.y - p.y;
+        canvas.setPointerCapture(e.pointerId);
+      }
+    }
+
+    function pointerMove(e) {
+      if (!state.dragging || e.pointerId !== state.pointerId || state.mode !== 'playing') return;
+      const p = pointFromEvent(e);
+      state.token.x = p.x + state.dragOffset.x;
+      state.token.y = p.y + state.dragOffset.y;
+
+      const dPath = distToPath(state.token);
+      const inside = dPath <= state.corridorWidth / 2;
+      state.feedbackOut = !inside;
+
+      // Debounce de salidas: suma solo al cambiar de adentro -> afuera.
+      if (!inside && !state.wasOutside) state.salidas += 1;
+      state.wasOutside = !inside;
+      updateHud();
+
+      const dGoal = Math.hypot(state.token.x - state.end.x, state.token.y - state.end.y);
+      if (dGoal <= state.snapRadius) {
+        completeDelivery();
+      }
+    }
+
+    function pointerUpOrCancel(e) {
+      if (e.pointerId !== state.pointerId) return;
+      state.dragging = false;
+      state.pointerId = null;
+      state.feedbackOut = false;
+      state.wasOutside = false;
+    }
+
+    function completeDelivery() {
+      if (state.resetTimer || state.mode !== 'playing') return;
+      state.dragging = false;
+      state.pointerId = null;
+      state.token.x = state.end.x;
+      state.token.y = state.end.y;
+      state.entregas += 1;
+      const secs = (performance.now() - state.startTs) / 1000;
+      state.tiempos.push(secs);
+      statusMsg.innerHTML = `¡Bien! Entrega #${state.entregas}. Seguimos sin penalización.`;
+      updateHud();
+
+      state.resetTimer = setTimeout(() => {
+        state.startTs = performance.now();
+        state.resetTimer = null;
+        resetTokenToStart();
+      }, 700);
+    }
+
+    function startGame() {
+      state.mode = 'playing';
+      state.startTs = performance.now();
+      state.lastFrameTs = performance.now();
+      statusMsg.textContent = 'Jugando. Arrastrá la ficha por el corredor hasta DESTINO.';
+      startBtn.disabled = true;
+      endBtn.disabled = false;
+      levelSelect.disabled = false;
+      resetTokenToStart();
+    }
+
+    function resetSession(clearGlobal = true) {
+      clearTimeout(state.resetTimer);
+      state.resetTimer = null;
+      state.dragging = false;
+      state.pointerId = null;
+      state.feedbackOut = false;
+      state.wasOutside = false;
+      state.msInside = 0;
+      state.msTotal = 0;
+      if (clearGlobal) {
+        state.entregas = 0;
+        state.salidas = 0;
+        state.tiempos = [];
+      }
+      state.startTs = performance.now();
+      resetTokenToStart();
+      updateHud();
+      statusMsg.textContent = state.mode === 'ended'
+        ? 'Sesión terminada. Tocá Reiniciar y luego Empezar para volver a jugar.'
+        : 'Reiniciado. Arrastrá la ficha hasta DESTINO.';
+    }
+
+    function endGame() {
+      state.mode = 'ended';
+      state.dragging = false;
+      state.pointerId = null;
+      statusMsg.textContent = 'Sesión finalizada. Resultados guardados en pantalla.';
+      startBtn.disabled = false;
+      endBtn.disabled = true;
+    }
+
+    function drawPath() {
+      if (state.path.length < 2) return;
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      ctx.beginPath();
+      ctx.moveTo(state.path[0].x, state.path[0].y);
+      for (let i = 1; i < state.path.length; i++) ctx.lineTo(state.path[i].x, state.path[i].y);
+      ctx.lineWidth = state.corridorWidth + 18;
+      ctx.strokeStyle = state.feedbackOut ? 'rgba(255,120,120,0.24)' : 'rgba(95,232,160,0.16)';
+      ctx.shadowBlur = 22;
+      ctx.shadowColor = state.feedbackOut ? 'rgba(255,100,100,0.35)' : 'rgba(100, 245, 170, 0.35)';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(state.path[0].x, state.path[0].y);
+      for (let i = 1; i < state.path.length; i++) ctx.lineTo(state.path[i].x, state.path[i].y);
+      ctx.lineWidth = state.corridorWidth;
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = state.feedbackOut ? 'rgba(255,110,110,0.38)' : 'rgba(91, 201, 142, 0.30)';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(state.path[0].x, state.path[0].y);
+      for (let i = 1; i < state.path.length; i++) ctx.lineTo(state.path[i].x, state.path[i].y);
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = 'rgba(234, 238, 250, 0.6)';
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = '#d4defb';
+      ctx.font = '700 22px Inter, system-ui, sans-serif';
+      ctx.fillText('INICIO', state.start.x - 30, state.start.y - state.corridorWidth / 2 - 16);
+      ctx.fillText('DESTINO', state.end.x - 56, state.end.y - state.corridorWidth / 2 - 16);
+    }
+
+    function drawGoal() {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(state.end.x, state.end.y, state.snapRadius * 0.9, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(96,225,160,0.14)';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(state.end.x, state.end.y, 30, 0, Math.PI * 2);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#52bf8a';
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawToken() {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(state.token.x, state.token.y, state.token.r + 13, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(state.token.x, state.token.y, state.token.r, 0, Math.PI * 2);
+      ctx.fillStyle = '#c6cde0';
+      ctx.fill();
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#616f8d';
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawOverlayText() {
+      ctx.save();
+      ctx.textAlign = 'center';
+      if (state.mode !== 'playing') {
+        ctx.fillStyle = 'rgba(230,238,255,0.86)';
+        ctx.font = '700 42px Inter, system-ui, sans-serif';
+        ctx.fillText(state.mode === 'ended' ? 'Sesión terminada' : 'Elegí un nivel y tocá “Empezar”', canvas.clientWidth / 2, canvas.clientHeight * 0.50);
+        ctx.font = '500 34px Inter, system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(195,210,242,0.85)';
+        ctx.fillText('Arrastrá la ficha con el mouse o el dedo', canvas.clientWidth / 2, canvas.clientHeight * 0.62);
+      }
+      if (state.feedbackOut) {
+        ctx.font = '800 48px Inter, system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(255,150,150,0.95)';
+        ctx.fillText('Volvé al camino', canvas.clientWidth / 2, canvas.clientHeight * 0.26);
+      }
+      ctx.restore();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+      drawPath();
+      drawGoal();
+      drawToken();
+      drawOverlayText();
+    }
+
+    function tick(ts) {
+      if (state.mode === 'playing') {
+        const dt = Math.max(0, ts - state.lastFrameTs);
+        // % en camino: acumulamos ms solo mientras se está arrastrando la ficha.
+        if (state.dragging) {
+          state.msTotal += dt;
+          const inside = distToPath(state.token) <= state.corridorWidth / 2;
+          if (inside) state.msInside += dt;
+        }
+        updateHud();
+      }
+      state.lastFrameTs = ts;
+      draw();
+      requestAnimationFrame(tick);
+    }
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(resizeCanvas, 120);
+    });
+
+    levelSelect.addEventListener('change', () => {
+      state.level = Number(levelSelect.value);
+      buildLevelPath();
+      resetTokenToStart();
+      draw();
+    });
+
+    startBtn.addEventListener('click', startGame);
+    resetBtn.addEventListener('click', () => {
+      if (state.mode === 'ended') state.mode = 'idle';
+      startBtn.disabled = false;
+      endBtn.disabled = true;
+      resetSession(true);
+      statusMsg.innerHTML = 'Listo. Elegí un nivel y tocá <strong>Empezar</strong>.';
+    });
+    endBtn.addEventListener('click', endGame);
+
+    canvas.addEventListener('pointerdown', pointerDown);
+    canvas.addEventListener('pointermove', pointerMove);
+    canvas.addEventListener('pointerup', pointerUpOrCancel);
+    canvas.addEventListener('pointercancel', pointerUpOrCancel);
+
+    endBtn.disabled = true;
+    resizeCanvas();
+    updateHud();
+    requestAnimationFrame((ts) => {
+      state.lastFrameTs = ts;
+      requestAnimationFrame(tick);
+    });
+  </script>
+</body>
+</html>
